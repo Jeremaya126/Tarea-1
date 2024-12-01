@@ -1,0 +1,305 @@
+
+nano stack_example.c   
+  GNU nano 7.2                                         stack_example.c                                                  #include <stdio.h>
+
+void test_function(int a, int b, int c, int d) {
+    int flag;
+    char buffer[10];
+
+    flag = 31337;  // El valor de flag no se está usando en el código
+    buffer[0] = 'A';  // Esto está bien, ya que estamos accediendo al primer elemento de buffer
+
+    // Para evitar posibles desbordamientos de buffer, podemos hacer algo más seguro
+    // Utilizando strncpy para copiar cadenas seguras (aunque en este caso solo estamos trabajando con un solo carácter)}
+
+int main() {
+    test_function(1, 2, 3, 4);
+    return 0;
+}
+
+jeremy@JEREMYS:~$ gdb -q ./a.out
+/home/jeremy/.gdbinit:1: Error in sourced command file:
+Ambiguous set command "dis intel": disable-randomization, disassemble-next-line, disassembler-options, disassembly-flavor...
+Reading symbols from ./a.out...
+(gdb) disass main
+Dump of assembler code for function main:
+   0x0000000000001192 <+0>:     endbr64
+   0x0000000000001196 <+4>:     push   %rbp
+   0x0000000000001197 <+5>:     mov    %rsp,%rbp
+   0x000000000000119a <+8>:     mov    $0x4,%ecx
+   0x000000000000119f <+13>:    mov    $0x3,%edx
+   0x00000000000011a4 <+18>:    mov    $0x2,%esi
+   0x00000000000011a9 <+23>:    mov    $0x1,%edi
+   0x00000000000011ae <+28>:    call   0x1149 <test_function>
+   0x00000000000011b3 <+33>:    mov    $0x0,%eax
+   0x00000000000011b8 <+38>:    pop    %rbp
+   0x00000000000011b9 <+39>:    ret
+End of assembler dump.
+(gdb) disass test_function
+Dump of assembler code for function test_function:
+   0x0000000000001149 <+0>:     endbr64
+   0x000000000000114d <+4>:     push   %rbp
+   0x000000000000114e <+5>:     mov    %rsp,%rbp
+   0x0000000000001151 <+8>:     sub    $0x30,%rsp
+   0x0000000000001155 <+12>:    mov    %edi,-0x24(%rbp)
+   0x0000000000001158 <+15>:    mov    %esi,-0x28(%rbp)
+   0x000000000000115b <+18>:    mov    %edx,-0x2c(%rbp)
+   0x000000000000115e <+21>:    mov    %ecx,-0x30(%rbp)
+   0x0000000000001161 <+24>:    mov    %fs:0x28,%rax
+   0x000000000000116a <+33>:    mov    %rax,-0x8(%rbp)
+   0x000000000000116e <+37>:    xor    %eax,%eax
+   0x0000000000001170 <+39>:    movl   $0x7a69,-0x18(%rbp)
+   0x0000000000001177 <+46>:    movb   $0x41,-0x12(%rbp)
+   0x000000000000117b <+50>:    nop
+   0x000000000000117c <+51>:    mov    -0x8(%rbp),%rax
+   0x0000000000001180 <+55>:    sub    %fs:0x28,%rax
+   0x0000000000001189 <+64>:    je     0x1190 <test_function+71>
+   0x000000000000118b <+66>:    call   0x1050 <__stack_chk_fail@plt>
+   0x0000000000001190 <+71>:    leave
+   0x0000000000001191 <+72>:    ret
+End of assembler dump.
+(gdb)(gdb) list main
+9
+10          // Para evitar posibles desbordamientos de buffer, podemos hacer algo más seguro
+11          // Utilizando strncpy para copiar cadenas seguras (aunque en este caso solo estamos trabajando con un solo carácter)
+12      }
+13
+14      int main() {
+15          test_function(1, 2, 3, 4);
+16          return 0;
+17      }
+18
+(gdb) break 10
+Breakpoint 1 at 0x117b: file stack_example.c, line 12.
+(gdb) run
+Starting program: /home/jeremy/a.out
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <https://debuginfod.ubuntu.com>
+Enable debuginfod for this session? (y or [n]) y
+Debuginfod has been enabled.
+To make this setting permanent, add 'set debuginfod enabled on' to .gdbinit.
+Downloading separate debug info for system-supplied DSO at 0x7ffff7fc3000
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+
+Breakpoint 1, test_function (a=1, b=2, c=3, d=4) at stack_example.c:12
+12      }
+(gdb) i r esp ebp eip
+esp            0xffffdff0          -8208
+ebp            0xffffe020          -8160
+Invalid register `eip'
+(gdb) i r esp ebp rip
+esp            0xffffdff0          -8208
+ebp            0xffffe020          -8160
+rip            0x55555555517b      0x55555555517b <test_function+50>
+(gdb) cont
+Continuing.
+[Inferior 1 (process 445) exited normally]
+(gdb) i r esp ebp rip
+The program has no registers now.
+(gdb) disass test_function
+Dump of assembler code for function test_function:
+   0x0000555555555149 <+0>:     endbr64
+   0x000055555555514d <+4>:     push   %rbp
+   0x000055555555514e <+5>:     mov    %rsp,%rbp
+   0x0000555555555151 <+8>:     sub    $0x30,%rsp
+   0x0000555555555155 <+12>:    mov    %edi,-0x24(%rbp)
+   0x0000555555555158 <+15>:    mov    %esi,-0x28(%rbp)
+   0x000055555555515b <+18>:    mov    %edx,-0x2c(%rbp)
+   0x000055555555515e <+21>:    mov    %ecx,-0x30(%rbp)
+   0x0000555555555161 <+24>:    mov    %fs:0x28,%rax
+   0x000055555555516a <+33>:    mov    %rax,-0x8(%rbp)
+   0x000055555555516e <+37>:    xor    %eax,%eax
+   0x0000555555555170 <+39>:    movl   $0x7a69,-0x18(%rbp)
+   0x0000555555555177 <+46>:    movb   $0x41,-0x12(%rbp)
+   0x000055555555517b <+50>:    nop
+   0x000055555555517c <+51>:    mov    -0x8(%rbp),%rax
+   0x0000555555555180 <+55>:    sub    %fs:0x28,%rax
+   0x0000555555555189 <+64>:    je     0x555555555190 <test_function+71>
+   0x000055555555518b <+66>:    call   0x555555555050 <__stack_chk_fail@plt>
+   0x0000555555555190 <+71>:    leave
+   0x0000555555555191 <+72>:    ret
+End of assembler dump.
+(gdb) print $ebp-12
+No registers.
+(gdb) print $ebp-40
+No registers.
+(gdb)
+
+jeremy@JEREMYS:~$ nano simplenote.c
+jeremy@JEREMYS:~$ ./simplenote "this is a test note"
+-bash: ./simplenote: No such file or directory
+jeremy@JEREMYS:~$ gcc -o simplenote simplenote.c
+simplenote.c: In function ‘main’:
+simplenote.c:44:9: warning: implicit declaration of function ‘write’; did you mean ‘fwrite’? [-Wimplicit-function-declaration]
+   44 |     if (write(fd, buffer, strlen(buffer)) == -1)
+      |         ^~~~~
+      |         fwrite
+simplenote.c:48:9: warning: implicit declaration of function ‘close’; did you mean ‘pclose’? [-Wimplicit-function-declaration]
+   48 |     if (close(fd) == -1)
+      |         ^~~~~
+      |         pclose
+simplenote.c:30:5: warning: ‘strncat’ specified bound 1 equals source length [-Wstringop-overflow=]
+   30 |     strncat(buffer, "\n", 1);    // Añade una nueva línea al final del búfer
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~
+jeremy@JEREMYS:~$ ./simplenote
+Uso: ./simplenote <dato a agregar a /tmp/notes>
+jeremy@JEREMYS:~$ ./simplenote "this is a test note"
+[DEBUG] buffer @ 0x5616024762a0: 'this is a test note
+'
+[DEBUG] datafile @ 0x561602476310: '/tmp/notes'
+[DEBUG] descriptor de archivo es 3
+Nota guardada exitosamente.
+jeremy@JEREMYS:~$ cat /tmp/notes
+this is a test note
+jeremy@JEREMYS:~$ ./simplenote "great, it works"
+[DEBUG] buffer @ 0x556f9a32b2a0: 'great, it works
+'
+[DEBUG] datafile @ 0x556f9a32b310: '/tmp/notes'
+[DEBUG] descriptor de archivo es 3
+Nota guardada exitosamente.
+jeremy@JEREMYS:~$ cat /tmp/notes
+this is a test note
+great, it works
+jeremy@JEREMYS:~$
+
+
+jeremy@JEREMYS:~$ nano bitwise.c
+jeremy@JEREMYS:~$ gcc bitwise.c
+jeremy@JEREMYS:~$ ./a.out
+Operador OR a nivel de bits |
+0 | 0 = 0
+0 | 1 = 1
+1 | 0 = 1
+1 | 1 = 1
+
+Operador AND a nivel de bits &
+0 & 0 = 0
+0 & 1 = 0
+1 & 0 = 0
+1 & 1 = 1
+jeremy@JEREMYS:~$ nano fcntl_flags.c
+jeremy@JEREMYS:~$ gcc fcntl_flags.c
+jeremy@JEREMYS:~$ ./a.out
+O_RDONLY                        : 0     :00000000 00000000 00000000 00000000
+O_WRONLY                        : 1     :00000000 00000000 00000000 00000001
+O_RDWR                          : 2     :00000000 00000000 00000000 00000010
+
+O_APPEND                        : 1024  :00000000 00000000 00000100 00000000
+O_TRUNC                         : 512   :00000000 00000000 00000010 00000000
+O_CREAT                         : 64    :00000000 00000000 00000000 01000000
+
+O_WRONLY|O_APPEND|O_CREAT       : 1089  :00000000 00000000 00000100 01000001
+jeremy@JEREMYS:~$
+
+
+jeremy@JEREMYS:~$ ls -l /etc/passwd simplenote*
+-rw-r--r-- 1 root   root    1426 Oct 29 05:06 /etc/passwd
+-rwxr-xr-x 1 jeremy jeremy 16520 Nov 23 10:51 simplenote
+-rw-r--r-- 1 jeremy jeremy  2697 Nov 23 10:51 simplenote.c
+jeremy@JEREMYS:~$ chmod 731 simplenote.c
+jeremy@JEREMYS:~$ ls -l simplenote.c
+-rwx-wx--x 1 jeremy jeremy 2697 Nov 23 10:51 simplenote.c
+jeremy@JEREMYS:~$ chmod ugo-wx simplenote.c
+jeremy@JEREMYS:~$ ls -l simplenote.c
+-r-------- 1 jeremy jeremy 2697 Nov 23 10:51 simplenote.c
+jeremy@JEREMYS:~$ chmod u+w simplenote.c
+jeremy@JEREMYS:~$ ls -l simplenote.c
+-rw------- 1 jeremy jeremy 2697 Nov 23 10:51 simplenote.c
+jeremy@JEREMYS:~$ ls -l /tmp/notes
+-rw------- 1 jeremy jeremy 36 Nov 23 10:52 /tmp/notes
+jeremy@JEREMYS:~$
+
+jeremy@JEREMYS:~$ id jeremy
+uid=1000(jeremy) gid=1000(jeremy) groups=1000(jeremy),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),100(users),107(netdev)
+jeremy@JEREMYS:~$ nano uid_demo.c
+jeremy@JEREMYS:~$ gcc -o uid_demo uid_demo.c
+jeremy@JEREMYS:~$ ls -l uid_demo
+-rwxr-xr-x 1 jeremy jeremy 16048 Nov 23 11:03 uid_demo
+jeremy@JEREMYS:~$ ./uid_demo
+Real UID: 1000
+Effective UID: 1000
+jeremy@JEREMYS:~$ sudo chown root:root ./uid_demo
+jeremy@JEREMYS:~$ ls -l uid_demo
+-rwxr-xr-x 1 root root 16048 Nov 23 11:03 uid_demo
+jeremy@JEREMYS:~$ ./uid_demo
+Real UID: 1000
+Effective UID: 1000
+jeremy@JEREMYS:~$
+jeremy@JEREMYS:~$ id jeremy
+uid=1000(jeremy) gid=1000(jeremy) groups=1000(jeremy),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),100(users),107(netdev)
+jeremy@JEREMYS:~$ nano uid_demo.c
+jeremy@JEREMYS:~$ gcc -o uid_demo uid_demo.c
+jeremy@JEREMYS:~$ ls -l uid_demo
+-rwxr-xr-x 1 jeremy jeremy 16048 Nov 24 04:03 uid_demo
+jeremy@JEREMYS:~$ ./uid_demo
+Real UID: 1000
+Effective UID: 1000
+jeremy@JEREMYS:~$ sudo chown root:root ./uid_demo
+jeremy@JEREMYS:~$ ls -l uid_demo
+-rwxr-xr-x 1 root root 16048 Nov 24 04:03 uid_demo
+jeremy@JEREMYS:~$ ./uid_demo
+Real UID: 1000
+Effective UID: 1000
+jeremy@JEREMYS:~$ chmod u+s ./uid_demo
+chmod: changing permissions of './uid_demo': Operation not permitted
+jeremy@JEREMYS:~$ sudo chmod u+s ./uid_demo
+jeremy@JEREMYS:~$ ls -l uid_demo
+-rwsr-xr-x 1 root root 16048 Nov 24 04:03 uid_demo
+jeremy@JEREMYS:~$ gcc -o notetaker notetaker.c
+jeremy@JEREMYS:~$ sudo chown root:root ./notetaker
+jeremy@JEREMYS:~$ sudo chmod u+s ./notetaker
+jeremy@JEREMYS:~$ ls -l ./notetaker
+-rwsr-xr-x 1 root root 16568 Nov 24 04:05 ./notetaker
+jeremy@JEREMYS:~$ ls -l /var/notes
+-rw------- 1 root root 39 Nov 23 22:41 /var/notes
+jeremy@JEREMYS:~$ cat /var/notes
+cat: /var/notes: Permission denied
+jeremy@JEREMYS:~$ sudo cat /var/notes
+
+this is a test of multiuser notes
+
+
+jeremy@JEREMYS:~$ gcc rand_example.c
+jeremy@JEREMYS:~$ ./a.out
+RAND_MAX is 2147483647
+Random values from 0 to RAND_MAX:
+1914213802
+992011771
+1481412733
+235015764
+361986585
+248368429
+928742259
+1760340022
+Random values from 1 to 20:
+18
+15
+12
+10
+13
+7
+6
+11
+jeremy@JEREMYS:~$ ./a.out
+RAND_MAX is 2147483647
+Random values from 0 to RAND_MAX:
+2111478770
+1036211493
+1794103172
+1182759613
+96536805
+1868786775
+149152571
+714231325
+Random values from 1 to 20:
+17
+18
+5
+5
+1
+12
+4
+20
+jeremy@JEREMYS:~$
