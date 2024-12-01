@@ -1,0 +1,681 @@
+  GNU nano 7.2                                         helloworld.asm                                                   ; Hello World Program - asmtutor.com
+; Compile with: nasm -f elf helloworld.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 helloworld.o -o helloworld
+; Run with: ./helloworld
+
+SECTION .data
+msg     db      'Hello World!', 0Ah
+
+SECTION .text
+global  _start
+
+_start:
+
+    mov     edx, 13
+    mov     ecx, msg
+    mov     ebx, 1
+    mov     eax, 4
+    int     80h
+
+    mov     ebx, 0      ; return 0 status on exit - 'No Errors'
+    mov     eax, 1      ; invoke SYS_EXIT (kernel opcode 1)
+    int     80h
+
+
+root@JEREMYS:/home/jeremy# nasm -f elf helloworld.asm
+root@JEREMYS:/home/jeremy# ld -m elf_i386 helloworld.o -o helloworld
+root@JEREMYS:/home/jeremy# ./helloworld
+Hello World!
+
+
+
+; Hello World Program (Calculating string length)
+; Compile with: nasm -f elf helloworld-len.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 helloworld-len.o -o helloworld-len
+; Run with: ./helloworld-len
+ 
+SECTION .data
+msg     db      'Hello, brave new world!', 0Ah ; we can modify this now without having to update anywhere else in the program
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+    mov     ebx, msg        ; move the address of our message string into EBX
+    mov     eax, ebx        ; move the address in EBX into EAX as well (Both now point to the same segment in memory)
+ 
+nextchar:
+    cmp     byte [eax], 0   ; compare the byte pointed to by EAX at this address against zero (Zero is an end of string delimiter)
+    jz      finished        ; jump (if the zero flagged has been set) to the point in the code labeled 'finished'
+    inc     eax             ; increment the address in EAX by one byte (if the zero flagged has NOT been set)
+    jmp     nextchar        ; jump to the point in the code labeled 'nextchar'
+ 
+finished:
+    sub     eax, ebx        ; subtract the address in EBX from the address in EAX
+                            ; remember both registers started pointing to the same address (see line 15)
+                            ; but EAX has been incremented one byte for each character in the message string
+                            ; when you subtract one memory address from another of the same type
+                            ; the result is number of segments between them - in this case the number of bytes
+ 
+    mov     edx, eax        ; EAX now equals the number of bytes in our string
+    mov     ecx, msg        ; the rest of the code should be familiar now
+    mov     ebx, 1
+    mov     eax, 4
+    int     80h
+ 
+    mov     ebx, 0
+    mov     eax, 1
+    int     80h
+
+
+
+root@JEREMYS:/home/jeremy# nasm -f elf helloworld-len.asm
+root@JEREMYS:/home/jeremy# ld -m elf_i386 helloworld-len.o -o helloworld-len
+root@JEREMYS:/home/jeremy# /helloworld-len
+bash: /helloworld-len: No such file or directory
+root@JEREMYS:/home/jeremy# ./helloworld-len
+Hello, brave new world!
+root@JEREMYS:/home/jeremy#
+
+
+
+; Hello World Program (Subroutines)
+; Compile with: nasm -f elf helloworld-len.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 helloworld-len.o -o helloworld-len
+; Run with: ./helloworld-len
+
+SECTION .data
+msg     db      'Hello, brave new world!', 0Ah
+
+SECTION .text
+global  _start
+
+_start:
+    mov     eax, msg        ; move the address of our message string into EAX
+    call    strlen          ; call our function to calculate the length of the string
+
+    mov     edx, eax        ; our function leaves the result in EAX
+    mov     ecx, msg        ; this is all the same as before
+    mov     ebx, 1
+    mov     eax, 4
+    int     80h
+
+    mov     ebx, 0
+    mov     eax, 1
+    int     80h
+
+strlen:                     ; this is our first function declaration
+    push    ebx             ; push the value in EBX onto the stack to preserve it while we use EBX in this function
+    mov     ebx, eax        ; move the address in EAX into EBX (Both point to the same segment in memory)
+
+nextchar:                   ; this is the same as lesson3
+    cmp     byte [eax], 0
+    jz      finished
+    inc     eax
+    jmp     nextchar
+
+finished:
+    sub     eax, ebx
+    pop     ebx             ; pop the value on the stack back into EBX
+    ret                     ; return to where the function was called
+
+
+
+root@JEREMYS:/home/jeremy# nasm -f elf helloworld-len2.asm
+root@JEREMYS:/home/jeremy# ld -m elf_i386 helloworld-len.o -o helloworld-len
+root@JEREMYS:/home/jeremy# ./helloworld-len
+Hello, brave new world!
+root@JEREMYS:/home/jeremy#
+
+functions.asm
+?
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+;------------------------------------------
+; int slen(String message)
+; String length calculation function
+slen:
+    push    ebx
+    mov     ebx, eax
+ 
+nextchar:
+    cmp     byte [eax], 0
+    jz      finished
+    inc     eax
+    jmp     nextchar
+ 
+finished:
+    sub     eax, ebx
+    pop     ebx
+    ret
+ 
+ 
+;------------------------------------------
+; void sprint(String message)
+; String printing function
+sprint:
+    push    edx
+    push    ecx
+    push    ebx
+    push    eax
+    call    slen
+ 
+    mov     edx, eax
+    pop     eax
+ 
+    mov     ecx, eax
+    mov     ebx, 1
+    mov     eax, 4
+    int     80h
+ 
+    pop     ebx
+    pop     ecx
+    pop     edx
+    ret
+ 
+ 
+;------------------------------------------
+; void exit()
+; Exit program and restore resources
+quit:
+    mov     ebx, 0
+    mov     eax, 1
+    int     80h
+    ret
+helloworld-inc.asm
+?
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+; Hello World Program (External file include)
+; Compile with: nasm -f elf helloworld-inc.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 helloworld-inc.o -o helloworld-inc
+; Run with: ./helloworld-inc
+ 
+%include        'functions.asm'                             ; include our external file
+ 
+SECTION .data
+msg1    db      'Hello, brave new world!', 0Ah              ; our first message string
+msg2    db      'This is how we recycle in NASM.', 0Ah      ; our second message string
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+    mov     eax, msg1       ; move the address of our first message string into EAX
+    call    sprint          ; call our string printing function
+ 
+    mov     eax, msg2       ; move the address of our second message string into EAX
+    call    sprint          ; call our string printing function
+ 
+    call    quit            ; call our quit function
+
+root@JEREMYS:/home/jeremy# nano functions.asm
+root@JEREMYS:/home/jeremy# rm helloworld-inc.asm
+rm: cannot remove 'helloworld-inc.asm': No such file or directory
+root@JEREMYS:/home/jeremy# nano helloworld-inc.asm
+root@JEREMYS:/home/jeremy# nasm -f elf helloworld-inc.asm
+root@JEREMYS:/home/jeremy# ld -m elf_i386 helloworld-inc.o -o helloworld-inc
+root@JEREMYS:/home/jeremy# ./helloworld-inc
+Hello, brave new world!
+This is how we recycle in NASM.
+This is how we recycle in NASM.
+root@JEREMYS:/home/jeremy#
+
+
+; Hello World Program (NULL terminating bytes)
+; Compile with: nasm -f elf helloworld-inc.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 helloworld-inc.o -o helloworld-inc
+; Run with: ./helloworld-inc
+ 
+%include        'functions.asm'
+ 
+SECTION .data
+msg1    db      'Hello, brave new world!', 0Ah, 0h          ; NOTE the null terminating byte
+msg2    db      'This is how we recycle in NASM.', 0Ah, 0h  ; NOTE the null terminating byte
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+    mov     eax, msg1
+    call    sprint
+ 
+    mov     eax, msg2
+    call    sprint
+ 
+    call    quit
+
+root@JEREMYS:/home/jeremy# nano helloworld-inc.asm
+root@JEREMYS:/home/jeremy# nasm -f elf helloworld-inc.asm
+root@JEREMYS:/home/jeremy# ld -m elf_i386 helloworld-inc.o -o helloworld-inc
+root@JEREMYS:/home/jeremy# ./helloworld-inc
+Hello, brave new world!
+This is how we recycle in NASM.
+root@JEREMYS:/home/jeremy#
+
+
+
+functions.asm
+?
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+;------------------------------------------
+; int slen(String message)
+; String length calculation function
+slen:
+    push    ebx
+    mov     ebx, eax
+ 
+nextchar:
+    cmp     byte [eax], 0
+    jz      finished
+    inc     eax
+    jmp     nextchar
+ 
+finished:
+    sub     eax, ebx
+    pop     ebx
+    ret
+ 
+ 
+;------------------------------------------
+; void sprint(String message)
+; String printing function
+sprint:
+    push    edx
+    push    ecx
+    push    ebx
+    push    eax
+    call    slen
+ 
+    mov     edx, eax
+    pop     eax
+ 
+    mov     ecx, eax
+    mov     ebx, 1
+    mov     eax, 4
+    int     80h
+ 
+    pop     ebx
+    pop     ecx
+    pop     edx
+    ret
+ 
+ 
+;------------------------------------------
+; void sprintLF(String message)
+; String printing with line feed function
+sprintLF:
+    call    sprint
+ 
+    push    eax         ; push eax onto the stack to preserve it while we use the eax register in this function
+    mov     eax, 0Ah    ; move 0Ah into eax - 0Ah is the ascii character for a linefeed
+                        ; as eax is 4 bytes wide, it now contains 0000000Ah
+    push    eax         ; push the linefeed onto the stack so we can get the address
+                        ; given that we have a little-endian architecture, eax register bytes are stored in reverse order,
+                        ; this corresponds to stack memory contents of 0Ah, 0h, 0h, 0h,
+                        ; giving us a linefeed followed by a NULL terminating byte
+    mov     eax, esp    ; move the address of the current stack pointer into eax for sprint
+    call    sprint      ; call our sprint function
+    pop     eax         ; remove our linefeed character from the stack
+    pop     eax         ; restore the original value of eax before our function was called
+    ret                 ; return to our program
+ 
+ 
+;------------------------------------------
+; void exit()
+; Exit program and restore resources
+quit:
+    mov     ebx, 0
+    mov     eax, 1
+    int     80h
+    ret
+helloworld-lf.asm
+?
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+; Hello World Program (Print with line feed)
+; Compile with: nasm -f elf helloworld-lf.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 helloworld-lf.o -o helloworld-lf
+; Run with: ./helloworld-lf
+ 
+%include        'functions.asm'
+ 
+SECTION .data
+msg1    db      'Hello, brave new world!', 0h          ; NOTE we have removed the line feed character 0Ah
+msg2    db      'This is how we recycle in NASM.', 0h  ; NOTE we have removed the line feed character 0Ah
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+    mov     eax, msg1
+    call    sprintLF    ; NOTE we are calling our new print with linefeed function
+ 
+    mov     eax, msg2
+    call    sprintLF    ; NOTE we are calling our new print with linefeed function
+ 
+    call    quit
+
+
+helloworld-args.asm
+?
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+; Hello World Program (Passing arguments from the command line)
+; Compile with: nasm -f elf helloworld-args.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 helloworld-args.o -o helloworld-args
+; Run with: ./helloworld-args
+ 
+%include        'functions.asm'
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+    pop     ecx             ; first value on the stack is the number of arguments
+ 
+nextArg:
+    cmp     ecx, 0h         ; check to see if we have any arguments left
+    jz      noMoreArgs      ; if zero flag is set jump to noMoreArgs label (jumping over the end of the loop)
+    pop     eax             ; pop the next argument off the stack
+    call    sprintLF        ; call our print with linefeed function
+    dec     ecx             ; decrease ecx (number of arguments left) by 1
+    jmp     nextArg         ; jump to nextArg label
+ 
+noMoreArgs:
+    call    quit
+
+root@JEREMYS:/home/jeremy# nano helloworld-args.asm
+root@JEREMYS:/home/jeremy# nasm -f elf helloworld-args.asm
+root@JEREMYS:/home/jeremy# ld -m elf_i386 helloworld-args.o -o helloworld-args
+root@JEREMYS:/home/jeremy# ./helloworld-args "This is one argument" "This is another" 101
+./helloworld-args
+This is one argument
+This is another
+101
+
+
+
+
+
+root@JEREMYS:/home/jeremy# nano .bss section example
+root@JEREMYS:/home/jeremy# nano helloworld-input.asm
+root@JEREMYS:/home/jeremy# nasm -f elf helloworld-input.asm
+root@JEREMYS:/home/jeremy# ld -m elf_i386 helloworld-input.o -o helloworld-input
+root@JEREMYS:/home/jeremy# ./helloworld-input
+Please enter your name: Jeremy
+Hello, Jeremy
+; Hello World Program (Getting input)
+; Compile with: nasm -f elf helloworld-input.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 helloworld-input.o -o helloworld-input
+; Run with: ./helloworld-input
+ 
+%include        'functions.asm'
+ 
+SECTION .data
+msg1        db      'Please enter your name: ', 0h      ; message string asking user for input
+msg2        db      'Hello, ', 0h                       ; message string to use after user has entered their name
+ 
+SECTION .bss
+sinput:     resb    255                                 ; reserve a 255 byte space in memory for the users input string
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+    mov     eax, msg1
+    call    sprint
+ 
+    mov     edx, 255        ; number of bytes to read
+    mov     ecx, sinput     ; reserved space to store our input (known as a buffer)
+    mov     ebx, 0          ; read from the STDIN file
+    mov     eax, 3          ; invoke SYS_READ (kernel opcode 3)
+    int     80h
+ 
+    mov     eax, msg2
+    call    sprint
+ 
+    mov     eax, sinput     ; move our buffer into eax (Note: input contains a linefeed)
+    call    sprint          ; call our print function
+ 
+    call    quit
+
+
+; Hello World Program (Count to 10)
+; Compile with: nasm -f elf helloworld-10.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 helloworld-10.o -o helloworld-10
+; Run with: ./helloworld-10
+ 
+%include        'functions.asm'
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+    mov     ecx, 0          ; ecx is initalised to zero.
+ 
+nextNumber:
+    inc     ecx             ; increment ecx
+ 
+    mov     eax, ecx        ; move the address of our integer into eax
+    add     eax, 48         ; add 48 to our number to convert from integer to ascii for printing
+    push    eax             ; push eax to the stack
+    mov     eax, esp        ; get the address of the character on the stack
+    call    sprintLF        ; call our print function
+ 
+    pop     eax             ; clean up the stack so we don't have unneeded bytes taking up space
+    cmp     ecx, 10         ; have we reached 10 yet? compare our counter with decimal 10
+    jne     nextNumber      ; jump if not equal and keep counting
+ 
+    call    quit
+
+
+
+root@JEREMYS:/home/jeremy# nano helloworld-10.asm
+root@JEREMYS:/home/jeremy# nasm -f elf helloworld-10.asm
+root@JEREMYS:/home/jeremy# ld -m elf_i386 helloworld-10.o -o helloworld-10
+root@JEREMYS:/home/jeremy# ./helloworld-10
+1
+2
+3
+4
+5
+6
+7
+8
+9
+:
+root@JEREMYS:/home/jeremy#
+
+
+
