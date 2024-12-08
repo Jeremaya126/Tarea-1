@@ -1,0 +1,389 @@
+functions.asm
+;------------------------------------------
+; void iprint(Integer number)
+; Integer printing function (itoa)
+iprint:
+    push    eax             ; preserve eax on the stack to be restored after function runs
+    push    ecx             ; preserve ecx on the stack to be restored after function runs
+    push    edx             ; preserve edx on the stack to be restored after function runs
+    push    esi             ; preserve esi on the stack to be restored after function runs
+    mov     ecx, 0          ; counter of how many bytes we need to print in the end
+ 
+divideLoop:
+    inc     ecx             ; count each byte to print - number of characters
+    mov     edx, 0          ; empty edx
+    mov     esi, 10         ; mov 10 into esi
+    idiv    esi             ; divide eax by esi
+    add     edx, 48         ; convert edx to it's ascii representation - edx holds the remainder after a divide instruction
+    push    edx             ; push edx (string representation of an intger) onto the stack
+    cmp     eax, 0          ; can the integer be divided anymore?
+    jnz     divideLoop      ; jump if not zero to the label divideLoop
+ 
+printLoop:
+    dec     ecx             ; count down each byte that we put on the stack
+    mov     eax, esp        ; mov the stack pointer into eax for printing
+    call    sprint          ; call our string print function
+    pop     eax             ; remove last character from the stack to move esp forward
+    cmp     ecx, 0          ; have we printed all bytes we pushed onto the stack?
+    jnz     printLoop       ; jump is not zero to the label printLoop
+ 
+    pop     esi             ; restore esi from the value we pushed onto the stack at the start
+    pop     edx             ; restore edx from the value we pushed onto the stack at the start
+    pop     ecx             ; restore ecx from the value we pushed onto the stack at the start
+    pop     eax             ; restore eax from the value we pushed onto the stack at the start
+    ret
+ 
+ 
+;------------------------------------------
+; void iprintLF(Integer number)
+; Integer printing function with linefeed (itoa)
+iprintLF:
+    call    iprint          ; call our integer printing function
+ 
+    push    eax             ; push eax onto the stack to preserve it while we use the eax register in this function
+    mov     eax, 0Ah        ; move 0Ah into eax - 0Ah is the ascii character for a linefeed
+    push    eax             ; push the linefeed onto the stack so we can get the address
+    mov     eax, esp        ; move the address of the current stack pointer into eax for sprint
+    call    sprint          ; call our sprint function
+    pop     eax             ; remove our linefeed character from the stack
+    pop     eax             ; restore the original value of eax before our function was called
+    ret
+ 
+ 
+;------------------------------------------
+; int slen(String message)
+; String length calculation function
+slen:
+    push    ebx
+    mov     ebx, eax
+ 
+nextchar:
+    cmp     byte [eax], 0
+    jz      finished
+    inc     eax
+    jmp     nextchar
+ 
+finished:
+    sub     eax, ebx
+    pop     ebx
+    ret
+ 
+ 
+;------------------------------------------
+; void sprint(String message)
+; String printing function
+sprint:
+    push    edx
+    push    ecx
+    push    ebx
+    push    eax
+    call    slen
+ 
+    mov     edx, eax
+    pop     eax
+ 
+    mov     ecx, eax
+    mov     ebx, 1
+    mov     eax, 4
+    int     80h
+ 
+    pop     ebx
+    pop     ecx
+    pop     edx
+    ret
+ 
+ 
+;------------------------------------------
+; void sprintLF(String message)
+; String printing with line feed function
+sprintLF:
+    call    sprint
+ 
+    push    eax
+    mov     eax, 0AH
+    push    eax
+    mov     eax, esp
+    call    sprint
+    pop     eax
+    pop     eax
+    ret
+ 
+ 
+;------------------------------------------
+; void exit()
+; Exit program and restore resources
+quit:
+    mov     ebx, 0
+    mov     eax, 1
+    int     80h
+    ret
+helloworld-itoa.asm
+; Hello World Program (Count to 10 itoa)
+; Compile with: nasm -f elf helloworld-itoa.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 helloworld-itoa.o -o helloworld-itoa
+; Run with: ./helloworld-itoa
+ 
+%include        'functions.asm'
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+    mov     ecx, 0
+ 
+nextNumber:
+    inc     ecx
+    mov     eax, ecx
+    call    iprintLF        ; NOTE call our new integer printing function (itoa)
+    cmp     ecx, 10
+    jne     nextNumber
+ 
+    call    quit
+
+jeremy@JEREMYS:~$ nano helloworld-itoa.asm
+jeremy@JEREMYS:~$ nasm -f elf helloworld-itoa.asm
+jeremy@JEREMYS:~$ ld -m elf_i386 helloworld-itoa.o -o helloworld-itoa
+jeremy@JEREMYS:~$ ./helloworld-itoa
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+calculator-addition.asm
+jeremy@JEREMYS:~$ nano calculator-addition.asm
+jeremy@JEREMYS:~$ nasm -f elf calculator-addition.asm
+jeremy@JEREMYS:~$ ld -m elf_i386 calculator-addition.o -o calculator-addition
+jeremy@JEREMYS:~$ ./calculator-addition
+99   
+
+
+calculator-subtraction.asm
+; Calculator (Subtraction)
+; Compile with: nasm -f elf calculator-subtraction.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 calculator-subtraction.o -o calculator-subtraction
+; Run with: ./calculator-subtraction
+ 
+%include        'functions.asm'
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+    mov     eax, 90     ; move our first number into eax
+    mov     ebx, 9      ; move our second number into ebx
+    sub     eax, ebx    ; subtract ebx from eax
+    call    iprintLF    ; call our integer print with linefeed function
+ 
+    call    quit
+
+jeremy@JEREMYS:~$ nano calculator-subtraction.asm
+jeremy@JEREMYS:~$ nasm -f elf calculator-subtraction.asm
+jeremy@JEREMYS:~$ ld -m elf_i386 calculator-subtraction.o -o calculator-subtraction
+jeremy@JEREMYS:~$ ./calculator-subtraction
+81
+calculator-multiplication.asm
+; Calculator (Multiplication)
+; Compile with: nasm -f elf calculator-multiplication.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 calculator-multiplication.o -o calculator-multiplication
+; Run with: ./calculator-multiplication
+ 
+%include        'functions.asm'
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+    mov     eax, 90     ; move our first number into eax
+    mov     ebx, 9      ; move our second number into ebx
+    mul     ebx         ; multiply eax by ebx
+    call    iprintLF    ; call our integer print with linefeed function
+ 
+    call    quit
+jeremy@JEREMYS:~$ nano calculator-multiplication.asm
+jeremy@JEREMYS:~$ nano calculator-multiplication.asm
+jeremy@JEREMYS:~$ nasm -f elf calculator-multiplication.asm
+jeremy@JEREMYS:~$ ld -m elf_i386 calculator-multiplication.o -o calculator-multiplication
+jeremy@JEREMYS:~$ ./calculator-multiplication
+810
+
+calculator-division.asm
+; Calculator (Division)
+; Compile with: nasm -f elf calculator-division.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 calculator-division.o -o calculator-division
+; Run with: ./calculator-division
+ 
+%include        'functions.asm'
+ 
+SECTION .data
+msg1        db      ' remainder '      ; a message string to correctly output result
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+    mov     eax, 90     ; move our first number into eax
+    mov     ebx, 9      ; move our second number into ebx
+    div     ebx         ; divide eax by ebx
+    call    iprint      ; call our integer print function on the quotient
+    mov     eax, msg1   ; move our message string into eax
+    call    sprint      ; call our string print function
+    mov     eax, edx    ; move our remainder into eax
+    call    iprintLF    ; call our integer printing with linefeed function
+ 
+    call    quit
+
+jeremy@JEREMYS:~$ nano calculator-division.asm
+jeremy@JEREMYS:~$ nasm -f elf calculator-division.asm
+jeremy@JEREMYS:~$ ld -m elf_i386 calculator-division.o -o calculator-division
+jeremy@JEREMYS:~$ ./calculator-division
+10 remainder 0
+functions.asm
+
+;------------------------------------------
+; int atoi(Integer number)
+; Ascii to integer function (atoi)
+atoi:
+    push    ebx             ; preserve ebx on the stack to be restored after function runs
+    push    ecx             ; preserve ecx on the stack to be restored after function runs
+    push    edx             ; preserve edx on the stack to be restored after function runs
+    push    esi             ; preserve esi on the stack to be restored after function runs
+    mov     esi, eax        ; move pointer in eax into esi (our number to convert)
+    mov     eax, 0          ; initialise eax with decimal value 0
+    mov     ecx, 0          ; initialise ecx with decimal value 0
+ 
+.multiplyLoop:
+    xor     ebx, ebx        ; resets both lower and uppper bytes of ebx to be 0
+    mov     bl, [esi+ecx]   ; move a single byte into ebx register's lower half
+    cmp     bl, 48          ; compare ebx register's lower half value against ascii value 48 (char value 0)
+    jl      .finished       ; jump if less than to label finished
+    cmp     bl, 57          ; compare ebx register's lower half value against ascii value 57 (char value 9)
+    jg      .finished       ; jump if greater than to label finished
+ 
+    sub     bl, 48          ; convert ebx register's lower half to decimal representation of ascii value
+    add     eax, ebx        ; add ebx to our integer value in eax
+    mov     ebx, 10         ; move decimal value 10 into ebx
+    mul     ebx             ; multiply eax by ebx to get place value
+    inc     ecx             ; increment ecx (our counter register)
+    jmp     .multiplyLoop   ; continue multiply loop
+ 
+.finished:
+    cmp     ecx, 0          ; compare ecx register's value against decimal 0 (our counter register)
+    je      .restore        ; jump if equal to 0 (no integer arguments were passed to atoi)
+    mov     ebx, 10         ; move decimal value 10 into ebx
+    div     ebx             ; divide eax by value in ebx (in this case 10)
+ 
+.restore:
+    pop     esi             ; restore esi from the value we pushed onto the stack at the start
+    pop     edx             ; restore edx from the value we pushed onto the stack at the start
+    pop     ecx             ; restore ecx from the value we pushed onto the stack at the start
+    pop     ebx             ; restore ebx from the value we pushed onto the stack at the start
+    ret
+
+calculator-atoi.asm
+
+; Calculator (ATOI)
+; Compile with: nasm -f elf calculator-atoi.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 calculator-atoi.o -o calculator-atoi
+; Run with: ./calculator-atoi 20 1000 317
+ 
+%include        'functions.asm'
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+    pop     ecx             ; first value on the stack is the number of arguments
+    pop     edx             ; second value on the stack is the program name (discarded when we initialise edx)
+    sub     ecx, 1          ; decrease ecx by 1 (number of arguments without program name)
+    mov     edx, 0          ; initialise our data register to store additions
+ 
+nextArg:
+    cmp     ecx, 0h         ; check to see if we have any arguments left
+    jz      noMoreArgs      ; if zero flag is set jump to noMoreArgs label (jumping over the end of the loop)
+    pop     eax             ; pop the next argument off the stack
+    call    atoi            ; convert our ascii string to decimal integer
+    add     edx, eax        ; perform our addition logic
+    dec     ecx             ; decrease ecx (number of arguments left) by 1
+    jmp     nextArg         ; jump to nextArg label
+ 
+noMoreArgs:
+    mov     eax, edx        ; move our data result into eax for printing
+    call    iprintLF        ; call our integer printing with linefeed function
+    call    quit            ; call our quit function
+jeremy@JEREMYS:~$ nano calculator-atoi.asm
+jeremy@JEREMYS:~$ nasm -f elf calculator-atoi.asm
+jeremy@JEREMYS:~$ ld -m elf_i386 calculator-atoi.o -o calculator-atoi
+jeremy@JEREMYS:~$ ./calculator-atoi 20 1000 317
+1337
+
+
+namespace.asm
+
+; Namespace
+; Compile with: nasm -f elf namespace.asm
+; Link with (64 bit systems require elf_i386 option): ld -m elf_i386 namespace.o -o namespace
+; Run with: ./namespace
+ 
+%include        'functions.asm'
+ 
+SECTION .data
+msg1        db      'Jumping to finished label.', 0h        ; a message string
+msg2        db      'Inside subroutine number: ', 0h        ; a message string
+msg3        db      'Inside subroutine "finished".', 0h     ; a message string
+ 
+SECTION .text
+global  _start
+ 
+_start:
+ 
+subrountineOne:
+    mov     eax, msg1       ; move the address of msg1 into eax
+    call    sprintLF        ; call our string printing with linefeed function
+    jmp     .finished       ; jump to the local label under the subrountineOne scope
+ 
+.finished:
+    mov     eax, msg2       ; move the address of msg2 into eax
+    call    sprint          ; call our string printing function
+    mov     eax, 1          ; move the value one into eax (for subroutine number one)
+    call    iprintLF        ; call our integer printing function with linefeed function
+ 
+subrountineTwo:
+    mov     eax, msg1       ; move the address of msg1 into eax
+    call    sprintLF        ; call our string print with linefeed function
+    jmp     .finished       ; jump to the local label under the subrountineTwo scope
+ 
+.finished:
+    mov     eax, msg2       ; move the address of msg2 into eax
+    call    sprint          ; call our string printing function
+    mov     eax, 2          ; move the value two into eax (for subroutine number two)
+    call    iprintLF        ; call our integer printing function with linefeed function
+ 
+    mov     eax, msg1       ; move the address of msg1 into eax
+    call    sprintLF        ; call our string printing with linefeed function
+    jmp     finished        ; jump to the global label finished
+ 
+finished:
+    mov     eax, msg3       ; move the address of msg3 into eax
+    call    sprintLF        ; call our string printing with linefeed function
+    call    quit            ; call our quit function
+
+jeremy@JEREMYS:~$ nano functions.asm
+jeremy@JEREMYS:~$ nasm -f elf namespace.asm
+jeremy@JEREMYS:~$ ld -m elf_i386 namespace.o -o namespace
+jeremy@JEREMYS:~$ ./namespace
+Jumping to finished label.
+Inside subroutine number: 1
+Jumping to finished label.
+Inside subroutine number: 2
+Jumping to finished label.
+Inside subroutine "finished".
